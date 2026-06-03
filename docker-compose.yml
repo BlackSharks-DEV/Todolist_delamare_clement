@@ -7,33 +7,30 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DB_HOST=db # Utilise le DNS automatique de Docker pour cibler le service db
-      - POSTGRES_DB=todo_db
-      - POSTGRES_USER=todo_user
-      - POSTGRES_PASSWORD=todo_pass
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=${DB_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - frontend
-      - backend
-    depends_on:
-      - db
+      - frontend   # Connecté au réseau public
+      - backend    # Connecté au réseau privé (fait le pont)
 
   db:
     image: postgres:15-alpine
     container_name: todo-db-service
     environment:
-      POSTGRES_DB: todo_db
-      POSTGRES_USER: todo_user
-      POSTGRES_PASSWORD: todo_pass
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - backend # La BDD est uniquement sur le réseau privé backend
-    # Note : Nous enlevons volontairement le mappage "ports:" pour bloquer l'accès extérieur !
+      - backend    # Uniquement connecté au réseau privé !
 
 volumes:
   postgres-data:
 
 networks:
-  frontend: # Réseau pour l'exposition publique
-  backend:  # Réseau privé et étanche pour la BDD
+  frontend:        # Déclaration du réseau public
+  backend:         # Déclaration du réseau privé
