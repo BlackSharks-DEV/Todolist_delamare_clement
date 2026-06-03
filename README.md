@@ -5,15 +5,15 @@ API de gestion de tâches simple en Node.js avec Express.
 ## Description
 
 Ce service expose une API REST pour créer, lire, mettre à jour et supprimer des tâches.
-Il s’exécute dans un conteneur Docker et utilise un stockage en mémoire : les données ne sont pas persistantes.
+Il s’exécute dans un conteneur Docker et utilise PostgreSQL pour stocker les tâches de façon persistante.
 
 ## Structure du projet
 
 - `Dockerfile` : image Node.js légère pour le service
-- `docker-compose.yml` : configuration Docker Compose pour lancer l’API
+- `docker-compose.yml` : configuration Docker Compose pour lancer l’API et le service PostgreSQL
 - `server.js` : point d’entrée de l’application
 - `src/app.js` : configuration Express, middleware et routes
-- `src/routes/tasks.js` : routes CRUD pour les tâches
+- `src/routes/tasks.js` : routes CRUD pour les tâches et connexion PostgreSQL
 - `src/middleware/errorHandler.js` : gestion des erreurs
 
 ## Prérequis
@@ -37,6 +37,15 @@ docker compose up --build
 ```text
 http://localhost:3000
 ```
+
+## Docker Compose
+
+La configuration démarre deux services :
+
+- `api` : votre application Express
+- `db` : PostgreSQL
+
+Le service PostgreSQL utilise un volume nommé `postgres-data` pour conserver les données entre les redémarrages.
 
 ## Points d’accès principaux
 
@@ -72,6 +81,17 @@ Réponse JSON :
 
 `description` est requis pour créer une tâche.
 
+## Configuration PostgreSQL
+
+Les variables de connexion utilisées sont :
+
+- `DB_HOST` (par défaut `db`)
+- `POSTGRES_DB` (par défaut `todo_db`)
+- `POSTGRES_USER` (par défaut `todo_user`)
+- `POSTGRES_PASSWORD` (par défaut `todo_pass`)
+
+Ces valeurs sont déjà configurées dans `docker-compose.yml`.
+
 ## Exécution locale sans Docker
 
 1. Installer les dépendances
@@ -90,8 +110,9 @@ node server.js
 
 ## Remarques
 
-- Le service stocke les tâches en mémoire, donc les données sont perdues au redémarrage du conteneur ou du serveur.
-- Le conteneur expose le port `3000`.
+- Les tâches sont désormais persistées dans PostgreSQL.
+- Le service expose le port `3000`.
+- La base de données PostgreSQL est accessible sur le port `5432` du système hôte via Docker Compose.
 
 ---
 
