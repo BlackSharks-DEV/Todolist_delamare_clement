@@ -1,0 +1,16 @@
+docker compose up -d --build
+
+
+$body = @{
+>>     title = "Tâche Sauvegardée"
+>>     description = "Cette tâche doit survivre au redémarrage de Docker"
+>> } | ConvertTo-Json
+>> 
+>> Invoke-RestMethod -Uri "http://localhost:3000/api/tasks" -Method Post -Body $body -ContentType "application/json"
+
+
+docker compose down
+docker compose up -d
+Invoke-RestMethod -Uri "http://localhost:3000/api/tasks" -Method Get
+
+
