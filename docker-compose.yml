@@ -8,10 +8,13 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - DB_HOST=db
+      - DB_HOST=db # Utilise le DNS automatique de Docker pour cibler le service db
       - POSTGRES_DB=todo_db
       - POSTGRES_USER=todo_user
       - POSTGRES_PASSWORD=todo_pass
+    networks:
+      - frontend
+      - backend
     depends_on:
       - db
 
@@ -23,9 +26,14 @@ services:
       POSTGRES_USER: todo_user
       POSTGRES_PASSWORD: todo_pass
     volumes:
-      - postgres-data:/var/lib/postgresql/data # Volume de persistance pour les donnees SQL
-    ports:
-      - "5432:5432"
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend # La BDD est uniquement sur le réseau privé backend
+    # Note : Nous enlevons volontairement le mappage "ports:" pour bloquer l'accès extérieur !
 
 volumes:
-  postgres-data: # Declaration du volume nomme gere par Docker
+  postgres-data:
+
+networks:
+  frontend: # Réseau pour l'exposition publique
+  backend:  # Réseau privé et étanche pour la BDD
