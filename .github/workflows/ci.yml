@@ -16,12 +16,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
-  # --- STAGE TEST (PHASE 2) ---
   test:
     runs-on: ubuntu-latest
-    needs: lint # On attend que le lint soit validé pour lancer les tests (Fail Fast)
-    
-    # Configuration du service PostgreSQL éphémère
+    needs: lint
     services:
       postgres:
         image: postgres:15-alpine
@@ -31,21 +28,11 @@ jobs:
           POSTGRES_PASSWORD: todo_pass
         ports:
           - 5432:5432
-        # On s'assure que Postgres a fini de démarrer avant d'exécuter l'étape
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
-    variables:
-      DB_HOST: localhost # GitHub mappe les services sur localhost
-      DB_PORT: 5432
-      POSTGRES_DB: todo_test
-      POSTGRES_USER: todo_user
-      POSTGRES_PASSWORD: todo_pass
-      NODE_ENV: test
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,14 +40,38 @@ jobs:
           node-version: 18
           cache: 'npm'
       - run: npm ci
-      
-      - name: Exécuter les tests unitaires
-        run: npm test
-        
-      - name: Exécuter les tests d'intégration
-        run: npm run test:integration
+      - run: npm test
+      - run: npm run test:integration
         env:
           DB_HOST: localhost
           POSTGRES_DB: todo_test
           POSTGRES_USER: todo_user
           POSTGRES_PASSWORD: todo_pass
+
+  # --- STAGE BUILD (PHASE 3) ---
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: test # N'exécute le build que si les tests sont passés au vert !
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Se connecter à DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extraire l'identifiant court du commit Git (SHA)
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Compiler et pousser l'image Docker (Multi-stage)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Double marquage demandé : version stable latest + version taguée avec le commit SHA
+          tags: |
+            ${{ secrets.DOCKERHUB_USER }}/todo-api:latest
+            ${{ secrets.DOCKERHUB_USER }}/todo-api:${{ steps.vars.outputs.sha_short }}
